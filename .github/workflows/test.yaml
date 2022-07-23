@@ -38,5 +38,6 @@ jobs:
           if [ -n "$status" ]; then
             echo "diff between generated hcl file and checked in file" 
             echo "$status"
+            git diff
             exit 1
           fi
