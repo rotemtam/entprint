@@ -29,5 +29,14 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - run: |
-          go run . --dir ./internal/example/ent/schema --dev mysql://root:pass@localhost:3307/test
+      - name: print
+        run: |
+          go run . --dir ./internal/example/ent/schema --dev mysql://root:pass@localhost:3307/test > internal/example/ent/mysql.hcl
+      - name: verify no diff
+        run: |
+          status=$(git status --porcelain)
+          if [ -n "$status" ]; then
+            echo "diff between generated hcl file and checked in file" 
+            echo "$status"
+            exit 1
+          fi
