@@ -25,7 +25,7 @@ jobs:
           --health-interval 10s
           --health-start-period 10s
           --health-timeout 5s
-          --health-retries 1
+          --health-retries 10
       postgres14:
         image: postgres:14
         env:
