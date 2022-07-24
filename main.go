@@ -39,25 +39,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("loading schema: %v", err)
 	}
-	drv, err := sqlclient.Open(context.Background(), CLI.Dev)
-	if err != nil {
-		log.Fatalf("connecting: %v", err)
-	}
+	var sch *atlas.Schema
 	opts := []schema.MigrateOption{
 		schema.WithGlobalUniqueID(CLI.WithGlobalUniqueIDs),
 		schema.WithDiffHook(func(differ schema.Differ) schema.Differ {
 			return schema.DiffFunc(func(current, desired *atlas.Schema) ([]atlas.Change, error) {
-				// Patch the desired state tables to refer to their schema.
-				for _, tbl := range desired.Tables {
-					tbl.Schema = desired
-				}
-				spec, err := drv.MarshalSpec(desired)
-				if err != nil {
-					return nil, err
-				}
-				if _, err := fmt.Fprint(os.Stdout, string(spec)); err != nil {
-					return nil, err
-				}
+				sch = desired
 				return nil, skip
 			})
 		}),
@@ -73,4 +60,21 @@ func main() {
 	if err := mig.Create(context.Background(), tbl...); err != nil && !errors.Is(err, skip) {
 		log.Fatalf("failed: %v", err)
 	}
+	drv, err := sqlclient.Open(context.Background(), CLI.Dev)
+	if err != nil {
+		log.Fatalf("connecting: %v", err)
+	}
+	norm, ok := drv.Driver.(atlas.Normalizer)
+	if !ok {
+		log.Fatalf("driver %T does not impl Normalizer", drv.Driver)
+	}
+	sch, err = norm.NormalizeSchema(context.Background(), sch)
+	if err != nil {
+		log.Fatalf("normalzing schema: %v", err)
+	}
+	spec, err := drv.MarshalSpec(sch)
+	if err != nil {
+		log.Fatalf("marshaling schema: %v", err)
+	}
+	fmt.Fprint(os.Stdout, string(spec))
 }
