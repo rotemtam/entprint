@@ -2,6 +2,28 @@ name: test
 on:
   push:
 jobs:
+  test-sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.0.2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+      - name: print
+        run: |
+          go run . --dir ./internal/example/ent/schema --dev="sqlite3://test?_fk=1" > internal/example/ent/sqlite3.hcl
+          cat internal/example/ent/sqlite3.hcl
+          rm test
+      - name: verify no diff
+        run: |
+          status=$(git status --porcelain)
+          if [ -n "$status" ]; then
+            echo "diff between generated hcl file and checked in file"
+            echo "$status"
+            git diff
+            exit 1
+          fi
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -57,7 +79,7 @@ jobs:
         run: |
           status=$(git status --porcelain)
           if [ -n "$status" ]; then
-            echo "diff between generated hcl file and checked in file" 
+            echo "diff between generated hcl file and checked in file"
             echo "$status"
             git diff
             exit 1
