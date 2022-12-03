@@ -1,17 +1,22 @@
 name: test
-on:
-  push:
+on: [pull_request, workflow_dispatch]
+
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        dockerize: [true, false]
         db: [mysql, postgres]
         include:
           - db: mysql
             url: "mysql://root:pass@localhost:3307/test"
+            tag: "8.0.29"
+            schema: test
           - db: postgres
             url: "postgres://postgres:pass@localhost:5432/test?sslmode=disable"
+            tag: "14"
+            schema: default
     services:
       mysql:
         image: mysql:8.0.29
@@ -43,21 +48,27 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.18
-      - uses: actions/cache@v2.1.6
+      - uses: actions/cache@v3.0.6
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
       - name: print
+        if: ${{ !matrix.dockerize }}
         run: |
-          go run . --dir ./internal/example/ent/schema --dev ${{ matrix.url}} > internal/example/ent/${{ matrix.db }}.hcl
+          go run . --dir ./internal/example/ent/schema --dev ${{ matrix.url }} > internal/example/ent/${{ matrix.db }}.hcl
+          cat internal/example/ent/${{ matrix.db }}.hcl
+      - name: print
+        if: ${{ matrix.dockerize }}
+        run: |
+          go run . --dir ./internal/example/ent/schema --dev docker://${{ matrix.db }}/${{ matrix.tag }}/${{ matrix.schema }} > internal/example/ent/${{ matrix.db }}.hcl
           cat internal/example/ent/${{ matrix.db }}.hcl
       - name: verify no diff
         run: |
           status=$(git status --porcelain)
           if [ -n "$status" ]; then
-            echo "diff between generated hcl file and checked in file" 
+            echo "diff between generated hcl file and checked in file"
             echo "$status"
             git diff
             exit 1
