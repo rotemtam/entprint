@@ -65,12 +65,11 @@ func main() {
 		log.Fatalf("connecting: %v", err)
 	}
 	norm, ok := drv.Driver.(atlas.Normalizer)
-	if !ok {
-		log.Fatalf("driver %T does not impl Normalizer", drv.Driver)
-	}
-	sch, err = norm.NormalizeSchema(context.Background(), sch)
-	if err != nil {
-		log.Fatalf("normalzing schema: %v", err)
+	if ok {
+		sch, err = norm.NormalizeSchema(context.Background(), sch)
+		if err != nil {
+			log.Fatalf("normalzing schema: %v", err)
+		}
 	}
 	spec, err := drv.MarshalSpec(sch)
 	if err != nil {
