@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	_ "ariga.io/atlas/sql/mysql"
@@ -17,6 +18,8 @@ import (
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
 	"github.com/alecthomas/kong"
+
+	_ "github.com/rotemtam/entprint/internal/docker"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -48,6 +51,14 @@ func main() {
 				return nil, skip
 			})
 		}),
+	}
+
+	parts, err := url.Parse(CLI.Dev)
+	if err != nil {
+		log.Fatalf("parsing dev url: %v", err)
+	}
+	if parts.Scheme == "docker" {
+		opts = append(opts, schema.WithDialect(parts.Host))
 	}
 	mig, err := schema.NewMigrateURL(CLI.Dev, opts...)
 	if err != nil {
