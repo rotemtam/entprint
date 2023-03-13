@@ -7,6 +7,11 @@ table "users" {
       generated = BY_DEFAULT
     }
   }
+  column "name" {
+    null    = false
+    type    = character_varying
+    comment = "Name of the user"
+  }
   primary_key {
     columns = [column.id]
   }
