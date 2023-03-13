@@ -1,5 +1,6 @@
 table "users" {
-  schema = schema.public
+  schema  = schema.public
+  comment = "Contains users"
   column "id" {
     null = false
     type = bigint

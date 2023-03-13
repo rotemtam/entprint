@@ -1,5 +1,6 @@
 table "users" {
   schema  = schema.test
+  comment = "Contains users"
   collate = "utf8mb4_bin"
   column "id" {
     null           = false

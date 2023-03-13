@@ -1,5 +1,6 @@
 table "users" {
-  schema = schema.main
+  schema  = schema.main
+  comment = "Contains users"
   column "id" {
     null           = false
     type           = integer
