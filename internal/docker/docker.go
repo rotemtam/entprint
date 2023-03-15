@@ -42,6 +42,8 @@ type (
 		Database string
 		// Out is a custom writer to send docker cli output to.
 		Out io.Writer
+		// DockerInDocker is a flag to indicate that the container is running in a docker container.
+		DockerInDocker bool
 	}
 	// A Container is an instance of a created container.
 	Container struct {
@@ -278,11 +280,29 @@ func (c *Container) Wait(ctx context.Context, timeout time.Duration) error {
 
 // URL returns a URL to connect to the Container.
 func (c *Container) URL() (string, error) {
+	host := "localhost"
+	port := c.Port
+	isDIND := c.cfg.DockerInDocker
+	if isDIND {
+		// look up hostname with docker inspect:
+		cmd := exec.Command("docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", c.ID)
+		out, err := cmd.Output()
+		if err != nil {
+			return "", err
+		}
+		host = strings.TrimSpace(string(out))
+	}
 	switch img := strings.SplitN(c.cfg.Image, ":", 2)[0]; img {
 	case "postgres":
-		return fmt.Sprintf("postgres://postgres:%s@localhost:%s/%s?sslmode=disable", c.Passphrase, c.Port, c.cfg.Database), nil
+		if isDIND {
+			port = "5432"
+		}
+		return fmt.Sprintf("postgres://postgres:%s@%s:%s/%s?sslmode=disable", c.Passphrase, host, port, c.cfg.Database), nil
 	case "mysql", "mariadb":
-		return fmt.Sprintf("%s://root:%s@localhost:%s/%s", img, c.Passphrase, c.Port, c.cfg.Database), nil
+		if isDIND {
+			port = "3306"
+		}
+		return fmt.Sprintf("%s://root:%s@%s:%s/%s", img, c.Passphrase, host, port, c.cfg.Database), nil
 	default:
 		return "", fmt.Errorf("unknown container image: %q", img)
 	}
@@ -324,6 +344,9 @@ func client(ctx context.Context, u *url.URL) (client *sqlclient.Client, err erro
 		if err := Out(os.Stdout)(cfg); err != nil {
 			return nil, err
 		}
+	}
+	if u.Query().Has("dind") {
+		cfg.DockerInDocker = true
 	}
 	c, err := cfg.Run(ctx)
 	if err != nil {
