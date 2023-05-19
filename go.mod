@@ -3,8 +3,8 @@ module github.com/rotemtam/entprint
 go 1.18
 
 require (
-	ariga.io/atlas v0.9.1
-	entgo.io/ent v0.11.9
+	ariga.io/atlas v0.9.2-0.20230303073438-03a4779a6338
+	entgo.io/ent v0.11.10
 	github.com/alecthomas/kong v0.6.1
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/lib/pq v1.10.7
