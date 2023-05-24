@@ -1,10 +1,16 @@
 table "users" {
   schema  = schema.test
+  comment = "Contains users"
   collate = "utf8mb4_bin"
   column "id" {
     null           = false
     type           = bigint
     auto_increment = true
+  }
+  column "name" {
+    null    = false
+    type    = varchar(255)
+    comment = "Name of the user"
   }
   primary_key {
     columns = [column.id]

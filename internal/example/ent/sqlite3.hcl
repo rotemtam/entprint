@@ -1,9 +1,15 @@
 table "users" {
-  schema = schema.main
+  schema  = schema.main
+  comment = "Contains users"
   column "id" {
     null           = false
     type           = integer
     auto_increment = true
+  }
+  column "name" {
+    null    = false
+    type    = text
+    comment = "Name of the user"
   }
   primary_key {
     columns = [column.id]

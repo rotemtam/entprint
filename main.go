@@ -75,6 +75,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("connecting: %v", err)
 	}
+	defer func() {
+		if err := drv.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, fmt.Errorf("issue closing driver: %w", err))
+			os.Exit(1)
+		}
+	}()
 	norm, ok := drv.Driver.(atlas.Normalizer)
 	if ok {
 		sch, err = norm.NormalizeSchema(context.Background(), sch)
