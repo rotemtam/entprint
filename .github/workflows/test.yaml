@@ -1,14 +1,28 @@
 name: test
-on: [pull_request, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-sqlite:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - oldstable
+          - stable
+    name: "test-sqlite (go: ${{ matrix.go }})"
     steps:
       - uses: actions/checkout@v3.0.2
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: ${{ matrix.go }}
+      - name: go version
+        run: go version
       - name: print
         run: |
           go run . --dir ./internal/example/ent/schema --dev="sqlite3://test?_fk=1" > internal/example/ent/sqlite3.hcl
@@ -39,6 +53,7 @@ jobs:
             url: "postgres://postgres:pass@localhost:5432/test?sslmode=disable"
             tag: "14"
             schema: default
+    name: "test-${{ matrix.db}} (dockerize: ${{ matrix.dockerize }})"
     services:
       mysql:
         image: mysql:8.0.29
@@ -67,9 +82,9 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v3.0.2
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: stable
       - uses: actions/cache@v3.0.6
         with:
           path: ~/go/pkg/mod
